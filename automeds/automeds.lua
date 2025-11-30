@@ -1,7 +1,7 @@
-_addon.name = 'Automeds'
-_addon.version = '1.2.25'
+_addon.name = 'AutoMeds'
+_addon.version = '1.3.25'
 _addon.author = 'Multi'
-_addon.commands = {'automeds','ameds'}
+_addon.commands = {'ameds'}
 
 require('tables')
 require('strings')
@@ -11,9 +11,10 @@ config = require('config')
 chat = require('chat')
 res = require('resources')
 
-local automeds = true
+--------------------------------------------------------------------------------
+-- Settings
+--------------------------------------------------------------------------------
 
--- Defaults
 local defaults = {}
 defaults.buffs = S{"curse","disease","doom","paralysis","silence","slow"}
 defaults.alttrack = false
@@ -24,7 +25,8 @@ aura = {
 enabled = true,			-- Aura Awareness
 distance = 20,
 -- Sources List: add as {"target|debuff","target|debuff"}
-sources_list = {"numbing blossom|paralysis","triboulex|paralysis"},
+sources_list = {
+"biune ice elemental|paralysis","numbing blossom|paralysis","triboulex|paralysis"},
 smart = {
 enabled = false,		-- Smart Aura Block
 attempt_window = 8,   	-- Triggers Smart Aura Block after the failed `max_attempts` within the `attempt_window` in seconds
@@ -33,6 +35,8 @@ block_time = 120       	-- Seconds to pause item use when aura is assumed
 }
 }
 }
+
+local AutoMeds = true
 
 local settings = config.load(defaults)
 
@@ -251,7 +255,7 @@ end
 
 -- Main loop
 windower.register_event('prerender', function()
-if not automeds then return end
+if not AutoMeds then return end
 
 local player = windower.ffxi.get_player()
 if not player or not player.buffs then return end
@@ -271,7 +275,7 @@ local item = debuff_items[buff_name]
 local src = aura_source_nearby_for(buff_name)
 if src then
 if not aura_skip_alerts[buff_name] then
-windower.add_to_chat(123, ('[Automeds] Skipping item use for %s due to nearby aura source: %s.'):format(buff_name, src))
+windower.add_to_chat(123, ('[Auto Meds] Skipping item use for %s due to nearby aura source: %s.'):format(buff_name, src))
 aura_skip_alerts[buff_name] = true
 end
 active_debuff = buff_name
@@ -294,7 +298,7 @@ trim_attempts(buff_name, now, smart.attempt_window or 8)
 if aura_block_until[buff_name] then
 if not aura_block_alerted[buff_name] then
 local remaining = math.max(0, math.floor(aura_block_until[buff_name] - now))
-windower.add_to_chat(123, ('[Automeds] Pausing %s item use for %ds (assumed aura).'):format(buff_name, remaining))
+windower.add_to_chat(123, ('[Auto Meds] Pausing %s item use for %ds (assumed aura).'):format(buff_name, remaining))
 aura_block_alerted[buff_name] = true
 end
 active_debuff = buff_name
@@ -306,7 +310,7 @@ local attempts = use_attempts[buff_name] and #use_attempts[buff_name] or 0
 if attempts >= (smart.max_attempts or 2) then
 aura_block_until[buff_name] = now + (smart.block_time or 60)
 local remaining = math.max(0, math.floor((smart.block_time or 60)))
-windower.add_to_chat(123, ('[Automeds] Pausing %s item use for %ds (assumed aura after %d attempts).'):format(
+windower.add_to_chat(123, ('[Auto Meds] Pausing %s item use for %ds (assumed aura after %d attempts).'):format(
 buff_name, remaining, attempts))
 aura_block_alerted[buff_name] = true
 active_debuff = buff_name
@@ -370,7 +374,7 @@ end)
 windower.register_event('gain buff', function(id)
 local name = res.buffs[id] and res.buffs[id].english:lower()
 if name and settings.buffs:contains(name) then
-if name == 'silence' and automeds then
+if name == 'silence' and AutoMeds then
 windower.send_command('input /item "Echo Drops" '..windower.ffxi.get_player().name)
 end
 if settings.alttrack then
@@ -389,7 +393,10 @@ end
 return new,color
 end)
 
+--------------------------------------------------------------------------------
 -- Commands
+--------------------------------------------------------------------------------
+
 windower.register_event('addon command', function(...)
 local args = {...}
 if not args[1] then return end
@@ -420,8 +427,8 @@ windower.add_to_chat(207, 'Tracked debuffs:')
 for buff in settings.buffs:it() do windower.add_to_chat(207, ' - '..buff) end
 
 elseif cmd == 'toggle' then
-automeds = not automeds
-windower.add_to_chat(207, 'Auto medicine: '..tostring(automeds))
+AutoMeds = not AutoMeds
+windower.add_to_chat(207, 'Auto medicine: '..tostring(AutoMeds))
 
 elseif cmd == 'trackalt' then
 settings.alttrack = not settings.alttrack
@@ -487,7 +494,7 @@ end
 aura_rt_map[mon] = aura_rt_map[mon] or S{}
 aura_rt_map[mon]:add(buff)
 save_aura_rt_map()
-windower.add_to_chat(207, ('[Automeds] Added aura: %s - %s'):format(mon, buff))
+windower.add_to_chat(207, ('[Auto Meds] Added aura: %s - %s'):format(mon, buff))
 
 elseif cmd == 'aurarem' and args[2] then
 local mon, maybe_buff = parse_target_and_buff(args, 2)
@@ -525,15 +532,15 @@ windower.add_to_chat(207, ('No entry for: %s'):format(mon))
 return
 end
 local list = set_to_sorted_list(set)
-windower.add_to_chat(207, ('[Automeds] %s -> %s'):format(mon, table.concat(list, ', ')))
+windower.add_to_chat(207, ('[Auto Meds] %s -> %s'):format(mon, table.concat(list, ', ')))
 else
 local mons = {}
 for m,_ in pairs(aura_rt_map) do table.insert(mons, m) end
 table.sort(mons)
 if #mons == 0 then
-windower.add_to_chat(207, '[Automeds] Aura sources: (none)')
+windower.add_to_chat(207, '[Auto Meds] Aura sources: (none)')
 else
-windower.add_to_chat(207, '[Automeds] Aura sources:')
+windower.add_to_chat(207, '[Auto Meds] Aura sources:')
 for _, m in ipairs(mons) do
 local buffs = set_to_sorted_list(aura_rt_map[m])
 windower.add_to_chat(207, (' - %s|%s'):format(m, table.concat(buffs, ',')))
@@ -542,11 +549,11 @@ end
 end
 
 elseif cmd == 'help' then
-windower.add_to_chat(208, '[Automeds] Commands:')
+windower.add_to_chat(208, '[Auto Meds] Commands:')
 windower.add_to_chat(208, '//ameds watch [buff] - Track a debuff')
 windower.add_to_chat(208, '//ameds unwatch [buff] - Untrack a debuff')
 windower.add_to_chat(208, '//ameds list - Show tracked debuffs')
-windower.add_to_chat(208, '//ameds toggle - Toggle Automeds On/Off')
+windower.add_to_chat(208, '//ameds toggle - Toggle AutoMeds On/Off')
 windower.add_to_chat(208, '//ameds trackalt - Toggle alt broadcast')
 windower.add_to_chat(208, '//ameds sitrack - Toggle Sneak/Invisible wear tracker')
 windower.add_to_chat(208, '//ameds aura on|off - Enable/Disable Aura Awareness')
