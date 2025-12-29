@@ -2,7 +2,7 @@
 
 ## Features
 
-**Buff tracking list**
+**Buff Tracking List:**
 	- Maintains a configurable list of monitored debuffs
 
 **IPC Multi-Character Support:**
