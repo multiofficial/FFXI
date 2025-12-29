@@ -1,7 +1,35 @@
+--[[
+Copyright (c) 2025, Multi
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+* Redistributions of source code must retain the above copyright
+notice, this list of conditions and the following disclaimer.
+* Redistributions in binary form must reproduce the above copyright
+notice, this list of conditions and the following disclaimer in the
+documentation and/or other materials provided with the distribution.
+* Neither the name of [AutoMeds] nor the names of its contributors
+may be used to endorse or promote products derived from this software
+without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL [Multi] BE LIABLE FOR ANY DIRECT, INDIRECT,
+INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+]]
+
 _addon.name = 'AutoMeds'
-_addon.version = '1.3.25'
+_addon.version = '1.5.0'
 _addon.author = 'Multi'
-_addon.commands = {'ameds'}
+_addon.commands = {'automeds','ameds'}
 
 require('tables')
 require('strings')
@@ -275,7 +303,7 @@ local item = debuff_items[buff_name]
 local src = aura_source_nearby_for(buff_name)
 if src then
 if not aura_skip_alerts[buff_name] then
-windower.add_to_chat(123, ('[Auto Meds] Skipping item use for %s due to nearby aura source: %s.'):format(buff_name, src))
+windower.add_to_chat(123, ('[AutoMeds] Skipping item use for %s due to nearby aura source: %s.'):format(buff_name, src))
 aura_skip_alerts[buff_name] = true
 end
 active_debuff = buff_name
@@ -298,7 +326,7 @@ trim_attempts(buff_name, now, smart.attempt_window or 8)
 if aura_block_until[buff_name] then
 if not aura_block_alerted[buff_name] then
 local remaining = math.max(0, math.floor(aura_block_until[buff_name] - now))
-windower.add_to_chat(123, ('[Auto Meds] Pausing %s item use for %ds (assumed aura).'):format(buff_name, remaining))
+windower.add_to_chat(123, ('[AutoMeds] Pausing %s item use for %ds (assumed aura).'):format(buff_name, remaining))
 aura_block_alerted[buff_name] = true
 end
 active_debuff = buff_name
@@ -310,7 +338,7 @@ local attempts = use_attempts[buff_name] and #use_attempts[buff_name] or 0
 if attempts >= (smart.max_attempts or 2) then
 aura_block_until[buff_name] = now + (smart.block_time or 60)
 local remaining = math.max(0, math.floor((smart.block_time or 60)))
-windower.add_to_chat(123, ('[Auto Meds] Pausing %s item use for %ds (assumed aura after %d attempts).'):format(
+windower.add_to_chat(123, ('[AutoMeds] Pausing %s item use for %ds (assumed aura after %d attempts).'):format(
 buff_name, remaining, attempts))
 aura_block_alerted[buff_name] = true
 active_debuff = buff_name
@@ -494,7 +522,7 @@ end
 aura_rt_map[mon] = aura_rt_map[mon] or S{}
 aura_rt_map[mon]:add(buff)
 save_aura_rt_map()
-windower.add_to_chat(207, ('[Auto Meds] Added aura: %s - %s'):format(mon, buff))
+windower.add_to_chat(207, ('[AutoMeds] Added aura: %s - %s'):format(mon, buff))
 
 elseif cmd == 'aurarem' and args[2] then
 local mon, maybe_buff = parse_target_and_buff(args, 2)
@@ -532,15 +560,15 @@ windower.add_to_chat(207, ('No entry for: %s'):format(mon))
 return
 end
 local list = set_to_sorted_list(set)
-windower.add_to_chat(207, ('[Auto Meds] %s -> %s'):format(mon, table.concat(list, ', ')))
+windower.add_to_chat(207, ('[AutoMeds] %s -> %s'):format(mon, table.concat(list, ', ')))
 else
 local mons = {}
 for m,_ in pairs(aura_rt_map) do table.insert(mons, m) end
 table.sort(mons)
 if #mons == 0 then
-windower.add_to_chat(207, '[Auto Meds] Aura sources: (none)')
+windower.add_to_chat(207, '[AutoMeds] Aura sources: (none)')
 else
-windower.add_to_chat(207, '[Auto Meds] Aura sources:')
+windower.add_to_chat(207, '[AutoMeds] Aura sources:')
 for _, m in ipairs(mons) do
 local buffs = set_to_sorted_list(aura_rt_map[m])
 windower.add_to_chat(207, (' - %s|%s'):format(m, table.concat(buffs, ',')))
@@ -549,11 +577,11 @@ end
 end
 
 elseif cmd == 'help' then
-windower.add_to_chat(208, '[Auto Meds] Commands:')
+windower.add_to_chat(208, '[AutoMeds] Commands:')
+windower.add_to_chat(208, '//ameds toggle - Toggle on/off')
 windower.add_to_chat(208, '//ameds watch [buff] - Track a debuff')
 windower.add_to_chat(208, '//ameds unwatch [buff] - Untrack a debuff')
 windower.add_to_chat(208, '//ameds list - Show tracked debuffs')
-windower.add_to_chat(208, '//ameds toggle - Toggle AutoMeds On/Off')
 windower.add_to_chat(208, '//ameds trackalt - Toggle alt broadcast')
 windower.add_to_chat(208, '//ameds sitrack - Toggle Sneak/Invisible wear tracker')
 windower.add_to_chat(208, '//ameds aura on|off - Enable/Disable Aura Awareness')
